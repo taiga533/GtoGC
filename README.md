@@ -1,0 +1,2 @@
+# GtoGC
+garoonの予定をgoogle calendarに転送するChrome拡張機能
