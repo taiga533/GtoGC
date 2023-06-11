@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.schemastore.org/chrome-manifest",
+  "manifest_version": 3,
+  "name": "GtoGC",
+  "description": "cybozu Garoonの予定をGoogle Calendarに同期する拡張機能",
+  "version": "0.0.1",
+  "permissions": ["identity", "storage", "notifications"],
+  "content_scripts": [
+    {
+      "matches": ["https://*/grn.cgi/*", "https://*/grn.exe/*", "https://*.cybozu.com/g/*"],
+      "js": ["src/contentScript.ts", "src/inject.ts"]
+    }
+  ],
+  "icons": {
+    "256": "src/assets/icon-256.png"
+  },
+  "background": {
+    "type": "module",
+    "service_worker": "src/background.ts"
+  },
+  "oauth2": {
+    "client_id": "264394321501-fotfjvv657qjg3ugtrs713h8gdkfnpur.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/calendar",
+      "https://www.googleapis.com/auth/calendar.events"
+    ]
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlB1NzfH9FGIbOIpTq4qGzV08CkoZXCavu1W7SmhiaxDJE+Go9GuTZbROmOCLwEK/pfMlIhdovkxEopIuJbTAxeCqUv9yraa0wsTqlGrV4nHExGtflr1hUZXVrmI59OqOPJC9TOj3NwP9D2XgCtcm7HX0te1aoOkz2a/ccctupByYbe+IhiJQbDKpZ4nCoquTdbXX8ziKAVMxX68871zydG6otZRcX/IYxcYtQR4jwnTXtOA97oKyWiJAhIG8xRb4ufgXxgt7ODcJ4CSVOfIhQjvnu7b3FIiN1BsHZt13hMYhoKXpff3JP2LVT/IB95aTYHNOAGKrARjey3rCrdjESwIDAQAB"
+}

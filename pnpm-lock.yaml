@@ -6,9 +6,11 @@ specifiers:
   date-fns: ^2.30.0
   typescript: ^5.0.2
   vite: ^4.3.9
+  zod: ^3.21.4
 
 dependencies:
   date-fns: 2.30.0
+  zod: 3.21.4
 
 devDependencies:
   '@crxjs/vite-plugin': 2.0.0-beta.17
@@ -740,3 +742,7 @@ packages:
     optionalDependencies:
       fsevents: 2.3.2
     dev: true
+
+  /zod/3.21.4:
+    resolution: {integrity: sha512-m46AKbrzKVzOzs/DZgVnG5H55N1sv1M8qZU3A8RIKbs3mrACDNeIOeilDymVb2HdmP8uwshOCF4uJ8uM9rCqJw==}
+    dev: false
