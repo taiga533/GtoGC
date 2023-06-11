@@ -1,0 +1,215 @@
+import { z } from "zod";
+import {
+  getStatusFromSyncStorage,
+  saveStatusToSyncStorage,
+} from "./api/chromeStorage";
+import {
+  deleteEvent,
+  getEvents,
+  insertCalendar,
+  insertEvent,
+  updateEvent,
+} from "./api/googleCalendar";
+
+const GaroonDateSchema = z.object({
+  dateTime: z.string(),
+  timeZone: z.string(),
+});
+const GaroonEventSchema = z.object({
+  id: z.string(),
+  subject: z.string(),
+  end: GaroonDateSchema,
+  start: GaroonDateSchema,
+  isAllDay: z.boolean(),
+});
+type GoogleEvent = {
+  id: string;
+  summary: string;
+  start: z.infer<typeof GaroonDateSchema>;
+  end: z.infer<typeof GaroonDateSchema>;
+};
+type GaroonEvent = z.infer<typeof GaroonEventSchema>;
+
+const extensionStatusSchema = z.object({
+  calendarId: z.string().nullish(),
+  lastSyncUnixTime: z.number().nullish(),
+});
+const extensionStatusKey = "syncStatus";
+
+function markSyncTargets(oldEvents: GoogleEvent[], newEvents: GoogleEvent[]) {
+  function isSameEvent(
+    event1: GoogleEvent | null | undefined,
+    event2: GoogleEvent | null | undefined
+  ) {
+    if (event1 == null && event2 == null) {
+      return true;
+    }
+    if (event1 == null || event2 == null) {
+      return false;
+    }
+    return !(
+      event1.summary === event2.summary &&
+      event1.start.dateTime === event2.start.dateTime &&
+      event1.end.dateTime === event2.end.dateTime
+    );
+  }
+  const oldEventMap = new Map<string, GoogleEvent>(
+    oldEvents.map((event) => [event.id, event])
+  );
+  const newEventMap = new Map<string, GoogleEvent>(
+    newEvents.map((event) => [event.id, event])
+  );
+
+  const deleteEvents = oldEvents.filter((event) => !newEventMap.has(event.id));
+  const insertEvents = newEvents.filter((event) => !oldEventMap.has(event.id));
+  const updateEvents = newEvents.filter(
+    (event) =>
+      oldEventMap.has(event.id) &&
+      !isSameEvent(oldEventMap.get(event.id), event)
+  );
+  return {
+    deleteEvents,
+    insertEvents,
+    updateEvents,
+  };
+}
+
+function wait(waitTimeMs: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, waitTimeMs);
+  });
+}
+
+function convertGaroonEventToGoogleEvent(garoonEvent: GaroonEvent) {
+  return {
+    id:
+      garoonEvent.id +
+      garoonEvent.start.dateTime.replace(/T.+/, "").replaceAll("-", ""),
+    summary: garoonEvent.subject,
+    start: garoonEvent.start,
+    end: garoonEvent.end,
+  };
+}
+
+function shouldSyncCalendar(lastSyncUnixTime: number | null | undefined) {
+  const syncIntervalMinutes = 15;
+  return (
+    lastSyncUnixTime == null ||
+    lastSyncUnixTime < Date.now() - 1000 * 60 * syncIntervalMinutes
+  );
+}
+async function syncGaroonEventToGoogleCalendar(
+  token: string,
+  calendarId: string,
+  events: GoogleEvent[],
+  syncMethod: (
+    token: string,
+    calendarId: string,
+    event: GoogleEvent
+  ) => Promise<boolean>
+) {
+  const googleCalendarSyncRequests = events.map((googleCalendarEvent) => {
+    return async () => syncMethod(token, calendarId, googleCalendarEvent);
+  });
+  try {
+    for (const request of googleCalendarSyncRequests) {
+      await request();
+      await wait(500);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function execSyncCalendar(from: Date, to: Date, events: GoogleEvent[]) {
+  const { token } = await chrome.identity.getAuthToken({ interactive: true });
+  if (token == null) {
+    return;
+  }
+
+  const { calendarId: tmpCalendarId, lastSyncUnixTime } =
+    await getStatusFromSyncStorage(extensionStatusKey, extensionStatusSchema);
+  console.log({ tmpCalendarId, lastSyncUnixTime });
+  if (!shouldSyncCalendar(lastSyncUnixTime)) {
+    return;
+  }
+
+  const { id: calendarId } =
+    tmpCalendarId == null
+      ? await insertCalendar(token, "garoon-sync-calendar")
+      : { id: tmpCalendarId };
+
+  const oldEvents = await getEvents(token, calendarId, {
+    start: from.toISOString(),
+    end: to.toISOString(),
+  });
+
+  const { deleteEvents, insertEvents, updateEvents } = markSyncTargets(
+    oldEvents,
+    events
+  );
+  console.log({ deleteEvents, insertEvents, updateEvents });
+
+  await syncGaroonEventToGoogleCalendar(
+    token,
+    calendarId,
+    insertEvents,
+    insertEvent
+  );
+  await syncGaroonEventToGoogleCalendar(
+    token,
+    calendarId,
+    deleteEvents,
+    deleteEvent
+  );
+  await syncGaroonEventToGoogleCalendar(
+    token,
+    calendarId,
+    updateEvents,
+    updateEvent
+  );
+
+  await saveStatusToSyncStorage(extensionStatusKey, {
+    calendarId: calendarId,
+    lastSyncUnixTime: Date.now(),
+  });
+  return { deleteEvents, insertEvents, updateEvents };
+}
+
+chrome.runtime.onMessage.addListener((message) => {
+  console.debug(message);
+  const garoonEventArraySchema = z.array(GaroonEventSchema);
+  const events = garoonEventArraySchema
+    .parse(message.events)
+    .filter((event) => event.isAllDay === false)
+    .map((event) => convertGaroonEventToGoogleEvent(event));
+
+  execSyncCalendar(new Date(message.from), new Date(message.to), events).then(
+    (syncedEvents) => {
+      if (syncedEvents == null) {
+        return;
+      }
+
+      chrome.notifications.create({
+        type: "basic",
+        title: "Googleカレンダーへの同期が完了しました。",
+        iconUrl: chrome.runtime.getURL("src/assets/icon-256.png"),
+        message: `削除：${syncedEvents?.deleteEvents.length ?? 0
+        }件\n追加：${syncedEvents?.insertEvents.length ?? 0
+        }件\n更新：${syncedEvents?.updateEvents.length ?? 0}件\n同期したイベントの範囲${
+          new Date(message.from).toLocaleString()
+        }~${new Date(message.to).toLocaleString()}}`,
+      });
+    }
+  ).catch(() => {
+    chrome.notifications.create({
+      type: "basic",
+      title: "Googleカレンダーへの同期が失敗しました。",
+      iconUrl: chrome.runtime.getURL("src/assets/icon-512.png"),
+      message: `kigtaiga@gmail.comへご連絡ください。`,
+    });
+  });
+  return true;
+});
