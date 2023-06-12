@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json.schemastore.org/chrome-manifest",
   "manifest_version": 3,
   "name": "GtoGC",
   "description": "cybozu Garoonの予定をGoogle Calendarに同期する拡張機能",

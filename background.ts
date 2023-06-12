@@ -2,14 +2,14 @@ import { z } from "zod";
 import {
   getStatusFromSyncStorage,
   saveStatusToSyncStorage,
-} from "./api/chromeStorage";
+} from "../src/api/chromeStorage";
 import {
   deleteEvent,
   getEvents,
   insertCalendar,
   insertEvent,
   updateEvent,
-} from "./api/googleCalendar";
+} from "../src/api/googleCalendar";
 
 const GaroonDateSchema = z.object({
   dateTime: z.string(),
