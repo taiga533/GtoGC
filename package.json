@@ -1,6 +1,6 @@
 {
   "name": "gto-gc",
-  "displayName": "Gto gc",
+  "displayName": "GtoGC",
   "version": "0.0.1",
   "description": "cybozu Garoonの予定をGoogle Calendarに同期する拡張機能",
   "author": "kawasaki.taiga",
@@ -10,12 +10,15 @@
     "package": "plasmo package"
   },
   "dependencies": {
+    "@plasmohq/storage": "^1.6.1",
     "plasmo": "0.75.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@parcel/optimizer-data-url": "2.9.1",
+    "@parcel/transformer-inline-string": "2.9.1",
     "@plasmohq/prettier-plugin-sort-imports": "3.6.4",
     "@types/chrome": "0.0.237",
     "@types/node": "20.2.4",
@@ -25,8 +28,19 @@
     "typescript": "5.0.4"
   },
   "manifest": {
-    "host_permissions": [
-      "https://*/*"
-    ]
+    "host_permissions": ["https://*/grn.cgi/*", "https://*/grn.exe/*", "https://*.cybozu.com/g/*"],
+    "oauth2": {
+      "client_id": "264394321501-fotfjvv657qjg3ugtrs713h8gdkfnpur.apps.googleusercontent.com",
+      "scopes": [
+        "https://www.googleapis.com/auth/calendar",
+        "https://www.googleapis.com/auth/calendar.events"
+      ]
+    },
+    "permissions": [
+      "identity",
+      "scripting",
+      "notifications"
+    ],
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlB1NzfH9FGIbOIpTq4qGzV08CkoZXCavu1W7SmhiaxDJE+Go9GuTZbROmOCLwEK/pfMlIhdovkxEopIuJbTAxeCqUv9yraa0wsTqlGrV4nHExGtflr1hUZXVrmI59OqOPJC9TOj3NwP9D2XgCtcm7HX0te1aoOkz2a/ccctupByYbe+IhiJQbDKpZ4nCoquTdbXX8ziKAVMxX68871zydG6otZRcX/IYxcYtQR4jwnTXtOA97oKyWiJAhIG8xRb4ufgXxgt7ODcJ4CSVOfIhQjvnu7b3FIiN1BsHZt13hMYhoKXpff3JP2LVT/IB95aTYHNOAGKrARjey3rCrdjESwIDAQAB"
   }
 }

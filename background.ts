@@ -2,14 +2,16 @@ import { z } from "zod";
 import {
   getStatusFromSyncStorage,
   saveStatusToSyncStorage,
-} from "../src/api/chromeStorage";
+} from "api/chromeStorage";
 import {
   deleteEvent,
   getEvents,
   insertCalendar,
   insertEvent,
   updateEvent,
-} from "../src/api/googleCalendar";
+} from "api/googleCalendar";
+import iconUrl from "url:./assets/icon-512.png"
+export {}
 
 const GaroonDateSchema = z.object({
   dateTime: z.string(),
@@ -116,7 +118,7 @@ async function syncGaroonEventToGoogleCalendar(
   try {
     for (const request of googleCalendarSyncRequests) {
       await request();
-      await wait(500);
+      await wait(100);
     }
   } catch (e) {
     console.error(e);
@@ -141,6 +143,7 @@ async function execSyncCalendar(from: Date, to: Date, events: GoogleEvent[]) {
       ? await insertCalendar(token, "garoon-sync-calendar")
       : { id: tmpCalendarId };
 
+  console.log(from, to)
   const oldEvents = await getEvents(token, calendarId, {
     start: from.toISOString(),
     end: to.toISOString(),
@@ -185,6 +188,7 @@ chrome.runtime.onMessage.addListener((message) => {
     .parse(message.events)
     .filter((event) => event.isAllDay === false)
     .map((event) => convertGaroonEventToGoogleEvent(event));
+  console.log(message)
 
   execSyncCalendar(new Date(message.from), new Date(message.to), events).then(
     (syncedEvents) => {
@@ -195,7 +199,7 @@ chrome.runtime.onMessage.addListener((message) => {
       chrome.notifications.create({
         type: "basic",
         title: "Googleカレンダーへの同期が完了しました。",
-        iconUrl: chrome.runtime.getURL("src/assets/icon-256.png"),
+        iconUrl,
         message: `削除：${syncedEvents?.deleteEvents.length ?? 0
         }件\n追加：${syncedEvents?.insertEvents.length ?? 0
         }件\n更新：${syncedEvents?.updateEvents.length ?? 0}件\n同期したイベントの範囲${
@@ -203,11 +207,12 @@ chrome.runtime.onMessage.addListener((message) => {
         }~${new Date(message.to).toLocaleString()}}`,
       });
     }
-  ).catch(() => {
+  ).catch((e) => {
+    console.error(e)
     chrome.notifications.create({
       type: "basic",
       title: "Googleカレンダーへの同期が失敗しました。",
-      iconUrl: chrome.runtime.getURL("src/assets/icon-512.png"),
+      iconUrl,
       message: `kigtaiga@gmail.comへご連絡ください。`,
     });
   });

@@ -1,3 +1,9 @@
+import type { PlasmoCSConfig } from "plasmo"
+export const config: PlasmoCSConfig = {
+  matches: ["https://*/grn.cgi/*", "https://*/grn.exe/*", "https://*.cybozu.com/g/*"],
+  world: "MAIN",
+  run_at: "document_idle"
+}
 function truncMilliSec(dateStr: string) {
   return dateStr.replace(/\.\d+Z$/, "Z");
 }
