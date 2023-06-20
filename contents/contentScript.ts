@@ -1,3 +1,5 @@
+import { getExtensionStatus } from "~api/chromeStorage";
+
 window.addEventListener("garoonEventFetchSucess", async function (event) {
   if (!(event instanceof CustomEvent)) {
     return;
@@ -9,3 +11,9 @@ window.addEventListener("garoonEventFetchSucess", async function (event) {
   })
   console.debug("send")
 });
+
+(async () => {
+  const extensionStatus = await getExtensionStatus();
+  const waitingEvent = new CustomEvent('garoonEventFetchWaiting', { detail: {syncTermType: extensionStatus.syncTermType} });
+  window.dispatchEvent(waitingEvent);
+})();

@@ -65,6 +65,33 @@ export async function updateEvent(
   return handleResponseStatus(res);
 }
 
+export async function setDefaultCalendarReminder(
+  token: string,
+  calendarId: string,
+) {
+  const init = {
+    method: "PUT",
+    async: true,
+    headers: buildHeader(token),
+    contentType: "json",
+    body: JSON.stringify({
+      defaultReminders: [
+        {
+          method: "popup",
+          minutes: 10,
+        }
+      ],
+    }),
+  };
+  // 250件以上カレンダーがあるやつは知らん
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/users/me/calendarList/${calendarId}`,
+    init
+  );
+  return handleResponseStatus(res);
+}
+
+
 export async function deleteEvent(
   token: string,
   calendarId: string,

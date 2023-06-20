@@ -1,13 +1,14 @@
-import { z } from "zod";
+import { date, z } from "zod";
 import {
-  getStatusFromSyncStorage,
-  saveStatusToSyncStorage,
+  getExtensionStatus,
+  saveExtensionStatus,
 } from "api/chromeStorage";
 import {
   deleteEvent,
   getEvents,
   insertCalendar,
   insertEvent,
+  setDefaultCalendarReminder,
   updateEvent,
 } from "api/googleCalendar";
 import iconUrl from "url:./assets/icon-512.png"
@@ -36,7 +37,10 @@ const extensionStatusSchema = z.object({
   calendarId: z.string().nullish(),
   lastSyncUnixTime: z.number().nullish(),
 });
-const extensionStatusKey = "syncStatus";
+
+function isSameDate(date1: string, date2: string) {
+  return (new Date(date1)).getTime() === (new Date(date2)).getTime()
+}
 
 function markSyncTargets(oldEvents: GoogleEvent[], newEvents: GoogleEvent[]) {
   function isSameEvent(
@@ -49,10 +53,10 @@ function markSyncTargets(oldEvents: GoogleEvent[], newEvents: GoogleEvent[]) {
     if (event1 == null || event2 == null) {
       return false;
     }
-    return !(
+    return (
       event1.summary === event2.summary &&
-      event1.start.dateTime === event2.start.dateTime &&
-      event1.end.dateTime === event2.end.dateTime
+      isSameDate(event1.start.dateTime, event2.start.dateTime) &&
+      isSameDate(event1.end.dateTime, event2.end.dateTime)
     );
   }
   const oldEventMap = new Map<string, GoogleEvent>(
@@ -132,8 +136,8 @@ async function execSyncCalendar(from: Date, to: Date, events: GoogleEvent[]) {
   }
 
   const { calendarId: tmpCalendarId, lastSyncUnixTime } =
-    await getStatusFromSyncStorage(extensionStatusKey, extensionStatusSchema);
-  console.log({ tmpCalendarId, lastSyncUnixTime });
+    await getExtensionStatus();
+  ({ tmpCalendarId, lastSyncUnixTime });
   if (!shouldSyncCalendar(lastSyncUnixTime)) {
     return;
   }
@@ -142,8 +146,11 @@ async function execSyncCalendar(from: Date, to: Date, events: GoogleEvent[]) {
     tmpCalendarId == null
       ? await insertCalendar(token, "garoon-sync-calendar")
       : { id: tmpCalendarId };
+  
+  if (tmpCalendarId == null) {
+    await setDefaultCalendarReminder(token, calendarId);
+  }
 
-  console.log(from, to)
   const oldEvents = await getEvents(token, calendarId, {
     start: from.toISOString(),
     end: to.toISOString(),
@@ -153,7 +160,7 @@ async function execSyncCalendar(from: Date, to: Date, events: GoogleEvent[]) {
     oldEvents,
     events
   );
-  console.log({ deleteEvents, insertEvents, updateEvents });
+  ({ deleteEvents, insertEvents, updateEvents });
 
   await syncGaroonEventToGoogleCalendar(
     token,
@@ -174,7 +181,7 @@ async function execSyncCalendar(from: Date, to: Date, events: GoogleEvent[]) {
     updateEvent
   );
 
-  await saveStatusToSyncStorage(extensionStatusKey, {
+  await saveExtensionStatus({
     calendarId: calendarId,
     lastSyncUnixTime: Date.now(),
   });
@@ -188,7 +195,7 @@ chrome.runtime.onMessage.addListener((message) => {
     .parse(message.events)
     .filter((event) => event.isAllDay === false)
     .map((event) => convertGaroonEventToGoogleEvent(event));
-  console.log(message)
+  (message)
 
   execSyncCalendar(new Date(message.from), new Date(message.to), events).then(
     (syncedEvents) => {

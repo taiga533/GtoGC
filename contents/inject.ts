@@ -15,26 +15,40 @@ async function getGaroonEvents({rangeStart, rangeEnd}: getEventsParams) {
   if (window.garoon == null) {
     return null;
   }
-  return await window.garoon.api(`api/v1/schedule/events`, 'GET', {
-    fields: "id,subject,description,start,end,isAllDay",
-    orderBy: "start asc",
-    rangeStart: truncMilliSec(rangeStart.toISOString()),
-    rangeEnd: truncMilliSec(rangeEnd.toISOString()),
-  });
+  const events = [];
+  let hasNext = true;
+  while(hasNext) {
+    const res = await window.garoon.api(`api/v1/schedule/events`, 'GET', {
+      fields: "id,subject,description,start,end,isAllDay",
+      orderBy: "start asc",
+      rangeStart: truncMilliSec(rangeStart.toISOString()),
+      rangeEnd: truncMilliSec(rangeEnd.toISOString()),
+      offset: events.length,
+    });
+    hasNext = res.hasNext;
+    events.push(...res.data.events);
+  }
+  return events;
 }
 
-async function dispatchGaroonEvent() {
+function calcSyncTerm(syncTermType: "0" | "7" | "30") {
   const from = new Date()
   from.setHours(0, 0, 0, 0);
   from.setDate(from.getDate());
-  const to = new Date(from.getFullYear(), from.getMonth(), from.getDate(), 23, 59, 59);
+  const addDate = parseInt(syncTermType);
+  const to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + addDate, 23, 59, 59);
+  return {from, to};
+}
+
+async function dispatchGaroonEvent(syncTermType: "0" | "7" | "30") {
+  const {from, to} = calcSyncTerm(syncTermType);
  
   try {
     const events = await getGaroonEvents({rangeStart: from, rangeEnd: to});
     if (events == null) {
       return;
     }
-    const successEvent = new CustomEvent('garoonEventFetchSucess', { detail: {events: events.data.events, from: from.getTime(), to: to.getTime()} });
+    const successEvent = new CustomEvent('garoonEventFetchSucess', { detail: {events: events, from: from.getTime(), to: to.getTime()} });
     window.dispatchEvent(successEvent);
   } catch(e) {
     console.error(e);
@@ -43,4 +57,9 @@ async function dispatchGaroonEvent() {
   }
 }
 
-dispatchGaroonEvent()
+window.addEventListener("garoonEventFetchWaiting", async function (event) {
+  if (!(event instanceof CustomEvent)) {
+    return;
+  }
+  dispatchGaroonEvent(event.detail.syncTermType)
+})

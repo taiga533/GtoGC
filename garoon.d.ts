@@ -3,7 +3,7 @@ type ApiResponse = {
   statusCode: number,
   statusText: string,
   data: any,
-
+  hasNext: boolean,
 }
 interface Window {
   garoon: Garoon | undefined;
