@@ -1,29 +1,30 @@
-import { useEffect, useState } from "react";
-import { useObserver } from "./useObserver";
-import { handleError } from "./handleError";
+import { useEffect, useState } from "react"
+
+import { handleError } from "./handleError"
+import { useObserver } from "./useObserver"
 
 export function useQuery<T>(asyncFn: () => Promise<T>) {
-  const {observer, dispatcher} = useObserver<T>();
-  const [data, setData] = useState<T | null>(null);
+  const { observer, dispatcher } = useObserver<T>()
+  const [data, setData] = useState<T | null>(null)
   useEffect(() => {
-    let ignore = false;
-    dispatcher.loadStart();
+    let ignore = false
+    dispatcher.loadStart()
     asyncFn()
       .then((data) => {
         if (!ignore) {
-          setData(data);
-        };
+          setData(data)
+        }
       })
       .catch((e) => {
-        console.error(e);
-        dispatcher.setError(handleError(e));
+        console.error(e)
+        dispatcher.setError(handleError(e))
       })
       .finally(() => {
-        dispatcher.loadStop();
-      });
+        dispatcher.loadStop()
+      })
     return () => {
-      ignore = true;
+      ignore = true
     }
-  }, []);
-  return {...observer, data};
+  }, [])
+  return { ...observer, data }
 }

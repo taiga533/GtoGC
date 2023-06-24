@@ -1,7 +1,9 @@
-import AlertList from './components/AlertList'
-import { AlertProvider } from './hooks/useAlert'
-import { SettingPage } from './pages/SettingPage'
+import AlertList from "./components/AlertList"
+import { AlertProvider } from "./hooks/useAlert"
+import { SettingPage } from "./pages/SettingPage"
+
 import "./../style.css"
+
 function App() {
   return (
     <div data-theme="cupcake">

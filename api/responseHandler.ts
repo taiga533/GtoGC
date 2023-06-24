@@ -1,8 +1,13 @@
 import { z } from "zod"
 
-export async function handleResponse<T>(response: Response, responseBodySchema: z.ZodType<T>) {
+export async function handleResponse<T>(
+  response: Response,
+  responseBodySchema: z.ZodType<T>
+) {
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}, ${await response.text()}`)
+    throw new Error(
+      `Request failed with status ${response.status}, ${await response.text()}`
+    )
   }
 
   const rawObj = await response.json()
@@ -14,7 +19,9 @@ export async function handleResponse<T>(response: Response, responseBodySchema: 
 }
 export async function handleResponseStatus(response: Response) {
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}, ${await response.text()}`)
+    throw new Error(
+      `Request failed with status ${response.status}, ${await response.text()}`
+    )
   }
-  return true;
+  return true
 }

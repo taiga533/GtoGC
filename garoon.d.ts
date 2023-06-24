@@ -1,13 +1,17 @@
-type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH"
 type ApiResponse = {
-  statusCode: number,
-  statusText: string,
-  data: any,
-  hasNext: boolean,
+  statusCode: number
+  statusText: string
+  data: any
+  hasNext: boolean
 }
 interface Window {
-  garoon: Garoon | undefined;
+  garoon: Garoon | undefined
 }
 type Garoon = {
-  async api(pathOrUrl: string, method: HttpMethod,params: any): Promise<ApiResponse>;
+  api: (
+    pathOrUrl: string,
+    method: HttpMethod,
+    params: any
+  ) => Promise<ApiResponse>
 }
