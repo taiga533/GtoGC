@@ -10,6 +10,7 @@ const GoogleEventSchema = z.object({
   summary: z.string(),
   start: GoogleEventDateSchema,
   end: GoogleEventDateSchema,
+  status: z.enum(["confirmed", "tentative", "cancelled"])
 });
 
 type GoogleEvent = z.infer<typeof GoogleEventSchema>;
@@ -24,7 +25,7 @@ function buildHeader(token: string) {
 export async function insertEvent(
   token: string,
   calendarId: string,
-  event: GoogleEvent
+  event: Omit<GoogleEvent, "status">
 ) {
   const init = {
     method: "POST",
@@ -44,7 +45,7 @@ const CalenderSchema = z.object({ id: z.string(), summary: z.string() });
 export async function updateEvent(
   token: string,
   calendarId: string,
-  event: GoogleEvent
+  event: Omit<GoogleEvent, "status">
 ) {
   const init = {
     method: "PUT",
@@ -95,7 +96,7 @@ export async function setDefaultCalendarReminder(
 export async function deleteEvent(
   token: string,
   calendarId: string,
-  event: GoogleEvent
+  event: Omit<GoogleEvent, "status">
 ) {
   const init = {
     method: "DELETE",
@@ -134,10 +135,11 @@ export type DateTimeRange = {
   start: string;
   end: string;
 };
-export async function getEvents(
+export async function getEventsOnece(
   token: string,
   calendarId: string,
-  timeRange: DateTimeRange
+  timeRange: DateTimeRange,
+  pageToken?: string 
 ) {
   const init = {
     method: "GET",
@@ -148,18 +150,40 @@ export async function getEvents(
     },
     contentType: "json",
   };
-  // 250件以上カレンダーがあるやつは知らん
+  const params = new URLSearchParams();
+  params.append("showDeleted", "true");
+  params.append("timeMin", timeRange.start);
+  params.append("timeMax", timeRange.end);
+  if (pageToken != null)
+    params.append("pageToken", pageToken);
   const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?timeMin=${timeRange.start}&timeMax=${timeRange.end}`,
+    `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?${params}`,
     init
   );
-  const { items: oldEvents } = await handleResponse(
+  const parsed = await handleResponse(
     res,
     z.object({
       items: z.array(GoogleEventSchema),
+      pageToken: z.string().nullish()
     })
   );
-  return oldEvents;
+  return parsed;
+}
+
+export async function getEvents(
+  token: string,
+  calendarId: string,
+  timeRange: DateTimeRange
+) {
+  let pageToken = undefined;
+  const events: GoogleEvent[] = [];
+  do {
+    const eventsResponse = await getEventsOnece(token, calendarId, timeRange, pageToken);
+    pageToken = eventsResponse.pageToken
+    events.push(...eventsResponse.items);
+
+  } while(pageToken != null)
+  return events;
 }
 
 // export async function getCalendars(token: string) {

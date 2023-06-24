@@ -1,4 +1,4 @@
-import { date, z } from "zod";
+import { z } from "zod";
 import {
   getExtensionStatus,
   saveExtensionStatus,
@@ -33,16 +33,11 @@ type GoogleEvent = {
 };
 type GaroonEvent = z.infer<typeof GaroonEventSchema>;
 
-const extensionStatusSchema = z.object({
-  calendarId: z.string().nullish(),
-  lastSyncUnixTime: z.number().nullish(),
-});
-
 function isSameDate(date1: string, date2: string) {
   return (new Date(date1)).getTime() === (new Date(date2)).getTime()
 }
 
-function markSyncTargets(oldEvents: GoogleEvent[], newEvents: GoogleEvent[]) {
+function markSyncTargets(oldEvents: (GoogleEvent & {status: "confirmed" | "tentative" | "cancelled"})[], newEvents: GoogleEvent[]) {
   function isSameEvent(
     event1: GoogleEvent | null | undefined,
     event2: GoogleEvent | null | undefined
@@ -66,7 +61,7 @@ function markSyncTargets(oldEvents: GoogleEvent[], newEvents: GoogleEvent[]) {
     newEvents.map((event) => [event.id, event])
   );
 
-  const deleteEvents = oldEvents.filter((event) => !newEventMap.has(event.id));
+  const deleteEvents = oldEvents.filter((event) => !newEventMap.has(event.id) && event.status !== "cancelled");
   const insertEvents = newEvents.filter((event) => !oldEventMap.has(event.id));
   const updateEvents = newEvents.filter(
     (event) =>
@@ -189,7 +184,6 @@ async function execSyncCalendar(from: Date, to: Date, events: GoogleEvent[]) {
 }
 
 chrome.runtime.onMessage.addListener((message) => {
-  console.debug(message);
   const garoonEventArraySchema = z.array(GaroonEventSchema);
   const events = garoonEventArraySchema
     .parse(message.events)

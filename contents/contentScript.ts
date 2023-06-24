@@ -9,7 +9,6 @@ window.addEventListener("garoonEventFetchSucess", async function (event) {
     from: event.detail.from,
     to: event.detail.to
   })
-  console.debug("send")
 });
 
 (async () => {
