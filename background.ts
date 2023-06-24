@@ -41,6 +41,7 @@ function markSyncTargets(
   })[],
   newEvents: GoogleEvent[]
 ) {
+  console.debug("old, new", oldEvents, newEvents)
   function isSameEvent(
     event1: GoogleEvent | null | undefined,
     event2: GoogleEvent | null | undefined
@@ -113,10 +114,11 @@ async function syncGaroonEventToGoogleCalendar(
   syncMethod: (
     token: string,
     calendarId: string,
-    event: GoogleEvent
+    evnt: GoogleEvent
   ) => Promise<boolean>
 ) {
   const googleCalendarSyncRequests = events.map((googleCalendarEvent) => {
+    console.log("sync", syncMethod.name, googleCalendarEvent)
     return async () => syncMethod(token, calendarId, googleCalendarEvent)
   })
   try {
@@ -189,6 +191,7 @@ async function execSyncCalendar(from: Date, to: Date, events: GoogleEvent[]) {
 }
 
 chrome.runtime.onMessage.addListener((message) => {
+  console.debug(message);
   const garoonEventArraySchema = z.array(GaroonEventSchema)
   const events = garoonEventArraySchema
     .parse(message.events)

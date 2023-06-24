@@ -30,6 +30,8 @@ async function getGaroonEvents({ rangeStart, rangeEnd }: getEventsParams) {
       rangeEnd: truncMilliSec(rangeEnd.toISOString()),
       offset: events.length
     })
+    console.debug(res);
+
     hasNext = res.data.hasNext
     events.push(...res.data.events)
   }
