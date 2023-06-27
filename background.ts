@@ -19,7 +19,7 @@ const GaroonDateSchema = z.object({
 const GaroonEventSchema = z.object({
   id: z.string(),
   subject: z.string(),
-  end: GaroonDateSchema,
+  end: GaroonDateSchema.nullish(),
   start: GaroonDateSchema,
   isAllDay: z.boolean()
 })
@@ -96,7 +96,7 @@ function convertGaroonEventToGoogleEvent(garoonEvent: GaroonEvent) {
       garoonEvent.start.dateTime.replace(/T.+/, "").replaceAll("-", ""),
     summary: garoonEvent.subject,
     start: garoonEvent.start,
-    end: garoonEvent.end
+    end: garoonEvent.end ?? garoonEvent.start
   }
 }
 
