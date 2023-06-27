@@ -118,16 +118,13 @@ async function syncGaroonEventToGoogleCalendar(
   ) => Promise<boolean>
 ) {
   const googleCalendarSyncRequests = events.map((googleCalendarEvent) => {
-    console.log("sync", syncMethod.name, googleCalendarEvent)
     return async () => syncMethod(token, calendarId, googleCalendarEvent)
   })
-  try {
-    for (const request of googleCalendarSyncRequests) {
-      await request()
-      await wait(100)
-    }
-  } catch (e) {
-    console.error(e)
+  for (const request of googleCalendarSyncRequests) {
+    await request().catch((e) => {
+      console.error(e)
+    })
+    await wait(100)
   }
 }
 
@@ -191,7 +188,7 @@ async function execSyncCalendar(from: Date, to: Date, events: GoogleEvent[]) {
 }
 
 chrome.runtime.onMessage.addListener((message) => {
-  console.debug(message);
+  console.debug(message)
   const garoonEventArraySchema = z.array(GaroonEventSchema)
   const events = garoonEventArraySchema
     .parse(message.events)
