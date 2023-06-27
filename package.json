@@ -1,7 +1,7 @@
 {
   "name": "gto-gc",
   "displayName": "GtoGC",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "cybozu Garoonの予定をGoogle Calendarに同期する拡張機能",
   "author": "kawasaki.taiga",
   "scripts": {
