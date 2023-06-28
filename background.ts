@@ -25,7 +25,7 @@ const GaroonEventSchema = z.object({
 })
 type GoogleEvent = {
   id: string
-  summary: string
+  summary?: string | null
   start: z.infer<typeof GaroonDateSchema>
   end: z.infer<typeof GaroonDateSchema>
 }
