@@ -25,9 +25,10 @@ const GaroonEventSchema = z.object({
 })
 type GoogleEvent = {
   id: string
-  summary?: string | null
+  summary: string
   start: z.infer<typeof GaroonDateSchema>
   end: z.infer<typeof GaroonDateSchema>
+  status: "confirmed" | "tentative" | "cancelled"
 }
 type GaroonEvent = z.infer<typeof GaroonEventSchema>
 
@@ -54,6 +55,7 @@ function markSyncTargets(
     }
     return (
       event1.summary === event2.summary &&
+      event1.status === event2.status &&
       isSameDate(event1.start.dateTime, event2.start.dateTime) &&
       isSameDate(event1.end.dateTime, event2.end.dateTime)
     )
@@ -89,14 +91,17 @@ function wait(waitTimeMs: number) {
   })
 }
 
-function convertGaroonEventToGoogleEvent(garoonEvent: GaroonEvent) {
+function convertGaroonEventToGoogleEvent(
+  garoonEvent: GaroonEvent
+): GoogleEvent {
   return {
     id:
       garoonEvent.id +
       garoonEvent.start.dateTime.replace(/T.+/, "").replaceAll("-", ""),
     summary: garoonEvent.subject,
     start: garoonEvent.start,
-    end: garoonEvent.end ?? garoonEvent.start
+    end: garoonEvent.end ?? garoonEvent.start,
+    status: "confirmed"
   }
 }
 

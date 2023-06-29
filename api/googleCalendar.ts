@@ -46,7 +46,7 @@ const CalenderSchema = z.object({ id: z.string(), summary: z.string() })
 export async function updateEvent(
   token: string,
   calendarId: string,
-  event: Omit<GoogleEvent, "status">
+  event: GoogleEvent
 ) {
   const init = {
     method: "PUT",
@@ -135,7 +135,7 @@ export type DateTimeRange = {
   start: string
   end: string
 }
-export async function getEventsOnece(
+export async function getEventsOnce(
   token: string,
   calendarId: string,
   timeRange: DateTimeRange,
@@ -177,7 +177,7 @@ export async function getEvents(
   let pageToken = undefined
   const events: GoogleEvent[] = []
   do {
-    const eventsResponse = await getEventsOnece(
+    const eventsResponse = await getEventsOnce(
       token,
       calendarId,
       timeRange,
