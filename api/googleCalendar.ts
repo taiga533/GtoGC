@@ -8,7 +8,7 @@ const GoogleEventDateSchema = z.object({
 })
 const GoogleEventSchema = z.object({
   id: z.string(),
-  summary: z.string().nullish(),
+  summary: z.string().default(""),
   start: GoogleEventDateSchema,
   end: GoogleEventDateSchema,
   status: z.enum(["confirmed", "tentative", "cancelled"])

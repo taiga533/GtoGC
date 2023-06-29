@@ -1,9 +1,9 @@
-import { z } from "zod"
+import { type ZodTypeAny, z } from "zod"
 
-export async function handleResponse<T>(
+export async function handleResponse<T extends ZodTypeAny>(
   response: Response,
-  responseBodySchema: z.ZodType<T>
-) {
+  responseBodySchema: T
+): Promise<z.infer<T>> {
   if (!response.ok) {
     throw new Error(
       `Request failed with status ${response.status}, ${await response.text()}`
