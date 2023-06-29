@@ -6,22 +6,22 @@ const extensionConfigFormSchema = z.object({
   syncTermType: z.enum(["0", "7", "30"]).default("0")
 })
 
-type BacklogConfig = z.infer<typeof extensionConfigFormSchema>
+type ExtensionConfig = z.infer<typeof extensionConfigFormSchema>
 
-type BacklogConfigFormProps = {
-  initialValues: BacklogConfig
-  onSubmit: (data: BacklogConfig) => void
+type ExtensionConfigFormProps = {
+  initialValues: ExtensionConfig
+  onSubmit: (data: ExtensionConfig) => void
 }
 
 export function ExtensionConfigForm({
   initialValues,
   onSubmit
-}: BacklogConfigFormProps) {
+}: ExtensionConfigFormProps) {
   const {
     register,
     handleSubmit,
     formState: { errors }
-  } = useForm<BacklogConfig>({
+  } = useForm<ExtensionConfig>({
     resolver: zodResolver(extensionConfigFormSchema)
   })
   return (
